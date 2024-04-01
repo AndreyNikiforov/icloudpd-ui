@@ -4,7 +4,9 @@ import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
 import Random
-
+import Html.Attributes exposing (href)
+import Dict exposing (Dict)
+import Html.Attributes exposing (src)
 
 
 -- MAIN
@@ -74,7 +76,21 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  div []
-    [ h1 [] [ text (String.fromInt model.dieFace) ]
-    , button [ onClick Roll ] [ text "Roll" ]
-    ]
+  let
+    images = Dict.fromList [
+      (1, "https://www.shutterstock.com/image-illustration/face-dice-one-black-spot-over-1546355249"),
+      (2, "https://www.shutterstock.com/image-illustration/face-dice-two-black-spots-over-1546355255"),
+      (3, "https://www.shutterstock.com/image-illustration/face-dice-three-black-spots-over-1546355252"),
+      (4, "https://www.shutterstock.com/image-illustration/face-dice-four-black-spots-over-1546355258"),
+      (5, "https://www.shutterstock.com/image-illustration/face-dice-five-black-spots-over-1546355243"),
+      (6, "https://www.shutterstock.com/image-illustration/face-dice-six-black-spots-over-1546355246")
+      ]
+    url = (Dict.get model.dieFace images)
+  in
+    case url of
+      Nothing -> div [] [text "Error"]
+      Just u -> 
+        div []
+          [ img [src u] []
+          , button [ onClick Roll ] [ text "Roll" ]
+          ]
