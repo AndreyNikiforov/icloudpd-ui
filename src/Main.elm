@@ -4,9 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
 import Random
-import Html.Attributes exposing (href)
-import Dict exposing (Dict)
-import Html.Attributes exposing (src)
+
 
 
 -- MAIN
@@ -14,12 +12,12 @@ import Html.Attributes exposing (src)
 
 main : Program () Model Msg
 main =
-  Browser.element
-    { init = init
-    , update = update
-    , subscriptions = subscriptions
-    , view = view
-    }
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
 
 
 
@@ -27,15 +25,16 @@ main =
 
 
 type alias Model =
-  { dieFace : Int
-  }
+    { dieFace1 : Int
+    , dieFace2 : Int
+    }
 
 
-init : () -> (Model, Cmd Msg)
+init : () -> ( Model, Cmd Msg )
 init _ =
-  ( Model 1
-  , Cmd.none
-  )
+    ( Model 1 1
+    , Cmd.none
+    )
 
 
 
@@ -43,23 +42,31 @@ init _ =
 
 
 type Msg
-  = Roll
-  | NewFace Int
+    = Roll
+    | FirstFace Int
+    | SecondFace Int
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    Roll ->
-      ( model
-      , Random.generate NewFace (Random.int 1 6)
-      )
+    case msg of
+        Roll ->
+            ( model
+            , Cmd.batch
+                [ Random.generate FirstFace (Random.int 1 6)
+                , Random.generate SecondFace (Random.int 1 6)
+                ]
+            )
 
-    NewFace newFace ->
-      ( Model newFace
-      , Cmd.none
-      )
+        FirstFace face ->
+            ( { model | dieFace1 = face }
+            , Cmd.none
+            )
 
+        SecondFace face ->
+            ( { model | dieFace2 = face }
+            , Cmd.none
+            )
 
 
 -- SUBSCRIPTIONS
@@ -67,7 +74,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+    Sub.none
 
 
 
@@ -76,21 +83,9 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  let
-    images = Dict.fromList [
-      (1, "https://www.shutterstock.com/image-illustration/face-dice-one-black-spot-over-1546355249"),
-      (2, "https://www.shutterstock.com/image-illustration/face-dice-two-black-spots-over-1546355255"),
-      (3, "https://www.shutterstock.com/image-illustration/face-dice-three-black-spots-over-1546355252"),
-      (4, "https://www.shutterstock.com/image-illustration/face-dice-four-black-spots-over-1546355258"),
-      (5, "https://www.shutterstock.com/image-illustration/face-dice-five-black-spots-over-1546355243"),
-      (6, "https://www.shutterstock.com/image-illustration/face-dice-six-black-spots-over-1546355246")
-      ]
-    url = (Dict.get model.dieFace images)
-  in
-    case url of
-      Nothing -> div [] [text "Error"]
-      Just u -> 
-        div []
-          [ img [src u] []
-          , button [ onClick Roll ] [ text "Roll" ]
-          ]
+    div []
+        [ 
+          div [] [ text (String.fromInt model.dieFace1) ]
+        , div [] [ text (String.fromInt model.dieFace2) ]
+        , button [ onClick Roll ] [ text "Roll" ]
+        ]
