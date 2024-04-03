@@ -27,15 +27,14 @@ main =
 
 
 type alias Model =
-    { dieFace1 : Int
-    , dieFace2 : Int
+    { dieFaces : ( Int, Int )
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model 1 1
-    , Cmd.none
+    ( Model ( 1, 1 )
+    , generatePair
     )
 
 
@@ -45,8 +44,19 @@ init _ =
 
 type Msg
     = Roll
-    | FirstFace Int
-    | SecondFace Int
+    | NewFaces ( Int, Int )
+
+
+generatePair : Cmd Msg
+generatePair =
+    let
+        faceGenerator =
+            Random.int 1 6
+
+        doubleFaceGenerator =
+            Random.pair faceGenerator faceGenerator
+    in
+    Random.generate NewFaces doubleFaceGenerator
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -54,19 +64,11 @@ update msg model =
     case msg of
         Roll ->
             ( model
-            , Cmd.batch
-                [ Random.generate FirstFace (Random.int 1 6)
-                , Random.generate SecondFace (Random.int 1 6)
-                ]
+            , generatePair
             )
 
-        FirstFace face ->
-            ( { model | dieFace1 = face }
-            , Cmd.none
-            )
-
-        SecondFace face ->
-            ( { model | dieFace2 = face }
+        NewFaces faces ->
+            ( { model | dieFaces = faces }
             , Cmd.none
             )
 
@@ -87,16 +89,32 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     let
-        circles: Int -> List (Int, Int)
+        circles : Int -> List ( Int, Int )
         circles dieFace =
-            List.concat [ 
-              if 0 == modBy 2 dieFace then [] else [( 60, 60 )]
-              ,if dieFace > 1 then [( 90, 30 ), (30, 90)] else []
-              ,if dieFace > 3 then [( 30, 30 ), (90,90)] else []
-              ,if dieFace > 5 then [( 30, 60 ), (90, 60)] else []
-            ]
+            List.concat
+                [ if 0 == modBy 2 dieFace then
+                    []
 
-        buildCircles ( x, y ) =
+                  else
+                    [ ( 60, 60 ) ]
+                , if dieFace > 1 then
+                    [ ( 90, 30 ), ( 30, 90 ) ]
+
+                  else
+                    []
+                , if dieFace > 3 then
+                    [ ( 30, 30 ), ( 90, 90 ) ]
+
+                  else
+                    []
+                , if dieFace > 5 then
+                    [ ( 30, 60 ), ( 90, 60 ) ]
+
+                  else
+                    []
+                ]
+
+        buildCircle ( x, y ) =
             S.circle
                 [ SA.cx (String.fromInt x)
                 , SA.cy (String.fromInt y)
@@ -105,50 +123,32 @@ view model =
                 , SA.fill "white"
                 ]
                 []
+
+        viewCircle dieFace =
+            S.svg
+                [ SA.width "120"
+                , SA.height "120"
+                , SA.viewBox "0 0 120 120"
+                ]
+                (List.append
+                    [ S.rect
+                        [ SA.x "10"
+                        , SA.y "10"
+                        , SA.width "100"
+                        , SA.height "100"
+                        , SA.rx "15"
+                        , SA.ry "15"
+                        ]
+                        []
+                    ]
+                    (List.map
+                        buildCircle
+                        (circles dieFace)
+                    )
+                )
     in
     div []
-        [ 
-        S.svg
-            [ SA.width "120"
-            , SA.height "120"
-            , SA.viewBox "0 0 120 120"
-            ]
-            (List.append
-                [ S.rect
-                    [ SA.x "10"
-                    , SA.y "10"
-                    , SA.width "100"
-                    , SA.height "100"
-                    , SA.rx "15"
-                    , SA.ry "15"
-                    ]
-                    []
-                ]
-                (List.map
-                    buildCircles
-                    (circles model.dieFace1)
-                )
-            )
-        , S.svg
-            [ SA.width "120"
-            , SA.height "120"
-            , SA.viewBox "0 0 120 120"
-            ]
-            (List.append
-                [ S.rect
-                    [ SA.x "10"
-                    , SA.y "10"
-                    , SA.width "100"
-                    , SA.height "100"
-                    , SA.rx "15"
-                    , SA.ry "15"
-                    ]
-                    []
-                ]
-                (List.map
-                    buildCircles
-                    (circles model.dieFace2)
-                )
-            )
+        [ viewCircle (Tuple.first model.dieFaces)
+        , viewCircle (Tuple.second model.dieFaces)
         , button [ onClick Roll ] [ text "Roll" ]
         ]
