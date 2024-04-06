@@ -3,22 +3,20 @@ module Main exposing (..)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
-import Random
-import Svg as S exposing (circle, rect, svg)
-import Svg.Attributes as SA exposing (..)
-import Debug
+import Task
+import Time
+
 
 
 -- MAIN
 
 
-main : Program () Model Msg
 main =
     Browser.element
         { init = init
+        , view = view
         , update = update
         , subscriptions = subscriptions
-        , view = view
         }
 
 
@@ -27,14 +25,16 @@ main =
 
 
 type alias Model =
-    { dieFaces : ( Int, Int )
+    { zone : Time.Zone
+    , time : Time.Posix
+    , paused : Bool
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model ( 1, 1 )
-    , generatePair 0
+    ( Model Time.utc (Time.millisToPosix 0) False
+    , Task.perform AdjustTimeZone Time.here
     )
 
 
@@ -43,36 +43,35 @@ init _ =
 
 
 type Msg
-    = Roll
-    | NewFaces Int ( Int, Int )
-
-faceGenerator : Random.Generator Int
-faceGenerator =
-    Random.int 1 6
-
-doubleFaceGenerator : Random.Generator ( Int, Int )
-doubleFaceGenerator =
-    Random.pair faceGenerator faceGenerator
-
-generatePair : Int -> Cmd Msg
-generatePair n =
-    Random.generate (NewFaces n) doubleFaceGenerator
+    = Tick Time.Posix
+    | AdjustTimeZone Time.Zone
+    | Pause
+    | Resume
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Roll ->
-            ( model
-            , generatePair 5
+        Tick newTime ->
+            ( { model | time = newTime }
+            , Cmd.none
             )
 
-        NewFaces n faces ->
-            ( { model | dieFaces = faces }
-            , case (Debug.log "n=" n) of 
-                0 -> Cmd.none
-                _ -> generatePair (n - 1)
+        AdjustTimeZone newZone ->
+            ( { model | zone = newZone }
+            , Cmd.none
             )
+
+        Pause ->
+            ( { model | paused = True }
+            , Cmd.none
+            )
+
+        Resume ->
+            ( { model | paused = False }
+            , Cmd.none
+            )
+
 
 
 -- SUBSCRIPTIONS
@@ -80,76 +79,39 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    if model.paused then
+        Sub.none
+
+    else
+        Time.every 1000 Tick
 
 
 
 -- VIEW
 
 
+leftPadded : Int -> Int -> String
+leftPadded k n =
+    String.right k (String.fromInt (10 ^ k + n))
+
+
 view : Model -> Html Msg
 view model =
     let
-        circles : Int -> List ( Int, Int )
-        circles dieFace =
-            List.concat
-                [ if 0 == modBy 2 dieFace then
-                    []
+        hour =
+            leftPadded 2 (Time.toHour model.zone model.time)
 
-                  else
-                    [ ( 60, 60 ) ]
-                , if dieFace > 1 then
-                    [ ( 90, 30 ), ( 30, 90 ) ]
+        minute =
+            leftPadded 2 (Time.toMinute model.zone model.time)
 
-                  else
-                    []
-                , if dieFace > 3 then
-                    [ ( 30, 30 ), ( 90, 90 ) ]
-
-                  else
-                    []
-                , if dieFace > 5 then
-                    [ ( 30, 60 ), ( 90, 60 ) ]
-
-                  else
-                    []
-                ]
-
-        buildCircle ( x, y ) =
-            S.circle
-                [ SA.cx (String.fromInt x)
-                , SA.cy (String.fromInt y)
-                , SA.r "10"
-                , SA.stroke "white"
-                , SA.fill "white"
-                ]
-                []
-
-        viewCircle dieFace =
-            S.svg
-                [ SA.width "120"
-                , SA.height "120"
-                , SA.viewBox "0 0 120 120"
-                ]
-                (List.append
-                    [ S.rect
-                        [ SA.x "10"
-                        , SA.y "10"
-                        , SA.width "100"
-                        , SA.height "100"
-                        , SA.rx "15"
-                        , SA.ry "15"
-                        ]
-                        []
-                    ]
-                    (List.map
-                        buildCircle
-                        (circles dieFace)
-                    )
-                )
+        second =
+            leftPadded 2 (Time.toSecond model.zone model.time)
     in
     div []
-        [ viewCircle (Tuple.first model.dieFaces)
-        , viewCircle (Tuple.second model.dieFaces)
-        , button [ onClick Roll ] [ text "Roll" ]
+        [ h1 [] [ text (hour ++ ":" ++ minute ++ ":" ++ second) ]
+        , if model.paused then
+            button [ onClick Resume ] [ text "Resume" ]
+
+          else
+            button [ onClick Pause ] [ text "Pause" ]
         ]
