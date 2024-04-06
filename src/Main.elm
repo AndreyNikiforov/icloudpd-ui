@@ -6,7 +6,7 @@ import Html.Events exposing (..)
 import Random
 import Svg as S exposing (circle, rect, svg)
 import Svg.Attributes as SA exposing (..)
-
+import Debug
 
 
 -- MAIN
@@ -34,7 +34,7 @@ type alias Model =
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( Model ( 1, 1 )
-    , generatePair
+    , generatePair 0
     )
 
 
@@ -44,19 +44,19 @@ init _ =
 
 type Msg
     = Roll
-    | NewFaces ( Int, Int )
+    | NewFaces Int ( Int, Int )
 
+faceGenerator : Random.Generator Int
+faceGenerator =
+    Random.int 1 6
 
-generatePair : Cmd Msg
-generatePair =
-    let
-        faceGenerator =
-            Random.int 1 6
+doubleFaceGenerator : Random.Generator ( Int, Int )
+doubleFaceGenerator =
+    Random.pair faceGenerator faceGenerator
 
-        doubleFaceGenerator =
-            Random.pair faceGenerator faceGenerator
-    in
-    Random.generate NewFaces doubleFaceGenerator
+generatePair : Int -> Cmd Msg
+generatePair n =
+    Random.generate (NewFaces n) doubleFaceGenerator
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -64,14 +64,15 @@ update msg model =
     case msg of
         Roll ->
             ( model
-            , generatePair
+            , generatePair 5
             )
 
-        NewFaces faces ->
+        NewFaces n faces ->
             ( { model | dieFaces = faces }
-            , Cmd.none
+            , case (Debug.log "n=" n) of 
+                0 -> Cmd.none
+                _ -> generatePair (n - 1)
             )
-
 
 
 -- SUBSCRIPTIONS
