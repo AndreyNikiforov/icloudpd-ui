@@ -3,6 +3,8 @@ module Main exposing (..)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
+import Svg as S
+import Svg.Attributes as SA exposing (fillOpacity)
 import Task
 import Time
 
@@ -99,19 +101,116 @@ view : Model -> Html Msg
 view model =
     let
         hour =
-            leftPadded 2 (Time.toHour model.zone model.time)
+            Time.toHour model.zone model.time
+
+        hourView =
+            leftPadded 2 hour
+
+        minuteView =
+            leftPadded 2 minute
 
         minute =
-            leftPadded 2 (Time.toMinute model.zone model.time)
+            Time.toMinute model.zone model.time
+
+        secondView =
+            leftPadded 2 second
 
         second =
-            leftPadded 2 (Time.toSecond model.zone model.time)
+            Time.toSecond model.zone model.time
+
+        handDegree t c =
+            let
+                totalF =
+                    toFloat t
+
+                currentF =
+                    toFloat c
+
+                ratio =
+                    currentF / totalF
+            in
+            round (360 * ratio - 180)
+
+        hourHandView h =
+            S.rect
+                [ SA.x "57"
+                , SA.y "57"
+                , SA.width "6"
+                , SA.height "30"
+                , SA.rx "2"
+                , SA.ry "2"
+                , SA.stroke "black"
+                , SA.fill "black"
+                , SA.fillOpacity "25%"
+                , SA.transform ("rotate(" ++ String.fromInt (handDegree 12 h) ++ " 60 60)")
+                ]
+                []
+
+        minuteHandView h =
+            S.rect
+                [ SA.x "58"
+                , SA.y "58"
+                , SA.width "4"
+                , SA.height "50"
+                , SA.rx "2"
+                , SA.ry "2"
+                , SA.stroke "black"
+                , SA.fill "black"
+                , SA.fillOpacity "25%"
+                , SA.transform ("rotate(" ++ String.fromInt (handDegree 60 h) ++ " 60 60)")
+                ]
+                []
+
+        secondHandView h =
+            S.rect
+                [ SA.x "59"
+                , SA.y "59"
+                , SA.width "2"
+                , SA.height "60"
+                , SA.rx "1"
+                , SA.ry "1"
+                , SA.stroke "red"
+                , SA.fill "red"
+                , SA.transform ("rotate(" ++ String.fromInt (handDegree 60 h) ++ " 60 60)")
+                ]
+                []
+
+        markView h =
+            S.rect
+                [ SA.x "59"
+                , SA.y "4"
+                , SA.width "2"
+                , SA.height "20"
+                , SA.rx "1"
+                , SA.ry "1"
+                , SA.stroke "black"
+                , SA.fill "black"
+                , SA.strokeOpacity "90%"
+                , SA.fillOpacity "90%"
+                , SA.transform ("rotate(" ++ String.fromInt (handDegree 12 h) ++ " 60 60)")
+                ]
+                []
+
+        markViews =
+            List.map markView (List.range 0 12)
     in
     div []
-        [ h1 [] [ text (hour ++ ":" ++ minute ++ ":" ++ second) ]
+        [ h1 [] [ text (hourView ++ ":" ++ minuteView ++ ":" ++ secondView) ]
         , if model.paused then
             button [ onClick Resume ] [ text "Resume" ]
 
           else
             button [ onClick Pause ] [ text "Pause" ]
+        , S.svg
+            [ SA.width "120"
+            , SA.height "120"
+            , SA.viewBox "0 0 120 120"
+            ]
+            (List.append
+                markViews
+                [ hourHandView hour
+                , minuteHandView minute
+                , secondHandView second
+                ]
+            )
         ]
