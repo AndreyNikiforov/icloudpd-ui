@@ -68,7 +68,8 @@ executable icloudpd-ui
 
     -- Other library packages from which modules are imported.
     build-depends:  base ^>=4.17.2.1,
-                    happstack-server ==7.9.0
+                    happstack-server ==7.9.0,
+                    blaze-html == 0.9.2.0
 
     -- Directories containing source files.
     hs-source-dirs: app
