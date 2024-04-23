@@ -1,27 +1,37 @@
+{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Control.Monad    (msum, mzero, forM_)
-import Happstack.Server (nullConf, simpleHTTP, ok, toResponse)
+import Control.Monad (forM_, msum, mzero)
+import Data.ByteString.Char8 as C
+import qualified Data.Text as T
+import Happstack.Server (nullConf, ok, simpleHTTP, toResponseBS)
+import Lucid
 
-import Text.Blaze.Html5 as H
-import Text.Blaze.Html5.Attributes as A
-
-
-numbersTemplate :: Int -> H.Html
-numbersTemplate n = docTypeHtml $ do
-        H.head $ do
-            H.title "My First Page"
-            H.meta ! A.httpEquiv "Content-Type"
-               ! A.content "text/html;charset=utf-8"
-        H.body $ do
-            H.p "List of numbers:"
-            H.ul $ forM_ [1..n] (li . toHtml)
+numbersTemplate :: Int -> Html ()
+numbersTemplate n =
+  doctypehtml_
+    ( head_
+        ( title_ "My First Page"
+            <> meta_
+              [ httpEquiv_ "Content-Type",
+                content_ "text/html;charset=utf-8"
+              ]
+        )
+        <> body_
+          ( p_ "List of numbers:"
+              <> ul_
+                ( mapM_ (li_ . toHtml . show) [1 .. n]
+                )
+          )
+    )
 
 main :: IO ()
-main = simpleHTTP nullConf $ msum [
-        mzero
+main =
+  simpleHTTP nullConf $
+    msum
+      [ mzero,
         {- ,"Hello, World!" :: String -}
-        , ok $ toResponse $ numbersTemplate 4
-    ]
+        ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate 4
+      ]
