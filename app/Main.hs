@@ -3,14 +3,21 @@
 
 module Main where
 
-import Control.Monad (forM_, msum, mzero)
+import Control.Monad (msum, mzero)
 import Data.ByteString.Char8 as C
-import qualified Data.Text as T
-import Happstack.Server (nullConf, ok, simpleHTTP, toResponseBS)
+import Happstack.Server (nullConf, ok, simpleHTTP, toResponseBS, dir, seeOther)
 import Lucid
+import Lucid.Htmx
 
 numbersTemplate :: Int -> Html ()
 numbersTemplate n =
+  p_ "List of numbers:"
+    <> ul_
+      ( mapM_ (li_ . toHtml . show) [1 .. n]
+      )
+
+doc :: () -> Html ()
+doc _ =
   doctypehtml_
     ( head_
         ( title_ "My First Page"
@@ -18,13 +25,14 @@ numbersTemplate n =
               [ httpEquiv_ "Content-Type",
                 content_ "text/html;charset=utf-8"
               ]
+            <> script_ [src_ "https://unpkg.com/htmx.org@1.9.12"] ("" :: Html ())
         )
         <> body_
-          ( p_ "List of numbers:"
-              <> ul_
-                ( mapM_ (li_ . toHtml . show) [1 .. n]
-                )
-          )
+          [ hxGet_ "/body",
+            hxTrigger_ "load delay:1s",
+            hxSwap_ "innerHTML"
+          ]
+          (p_ "Loading..." :: Html ())
     )
 
 main :: IO ()
@@ -32,6 +40,7 @@ main =
   simpleHTTP nullConf $
     msum
       [ mzero,
-        {- ,"Hello, World!" :: String -}
-        ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate 4
+        dir "body" $ ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate 4,
+        ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ doc ()
+        -- ,seeOther "/" ("Redirect to Root" :: String)
       ]

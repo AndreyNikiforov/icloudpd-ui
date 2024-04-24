@@ -67,11 +67,12 @@ executable icloudpd-ui
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:  base ==4.17.2.1,
-                    happstack-server ==7.9.0,
-                    lucid2 == 0.0.20230706,
-                    text == 2.1.1,
-                    bytestring == 0.12.1.0,
+    build-depends:  base                ==4.17.2.1, 
+                    happstack-server    ==7.9.0, 
+                    lucid2              ==0.0.20220526, 
+                    text                ==2.1.1, 
+                    bytestring          ==0.12.1.0, 
+                    lucid2-htmx         ==0.1.0.8, 
 
     -- Directories containing source files.
     hs-source-dirs: app
