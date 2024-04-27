@@ -5,7 +5,7 @@ module Main where
 
 import Control.Monad (msum, mzero)
 import Data.ByteString.Char8 as C
-import Happstack.Server (nullConf, ok, simpleHTTP, toResponseBS, dir, seeOther)
+import Happstack.Server (dir, nullConf, nullDir, ok, seeOther, simpleHTTP, toResponse, toResponseBS)
 import Lucid
 import Lucid.Htmx
 
@@ -41,6 +41,6 @@ main =
     msum
       [ mzero,
         dir "body" $ ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate 4,
-        ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ doc ()
-        -- ,seeOther "/" ("Redirect to Root" :: String)
+        nullDir >> ok (toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ doc ()),
+        seeOther ("/" :: String) $ toResponse ("Goto to root" :: String)
       ]
