@@ -73,6 +73,7 @@ executable icloudpd-ui
                     text                ==2.1.1, 
                     bytestring          ==0.12.1.0, 
                     lucid2-htmx         ==0.1.0.8, 
+                    random              ==1.2.1.2,
 
     -- Directories containing source files.
     hs-source-dirs: app

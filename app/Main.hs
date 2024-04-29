@@ -8,6 +8,7 @@ import Data.ByteString.Char8 as C
 import Happstack.Server (dir, nullConf, nullDir, ok, seeOther, simpleHTTP, toResponse, toResponseBS)
 import Lucid
 import Lucid.Htmx
+import System.Random
 
 numbersTemplate :: Int -> Html ()
 numbersTemplate n =
@@ -15,6 +16,9 @@ numbersTemplate n =
     <> ul_
       ( mapM_ (li_ . toHtml . show) [1 .. n]
       )
+
+generateDelay :: RandomGen g => g -> Int
+generateDelay = fst . uniformR (3,10)
 
 doc :: () -> Html ()
 doc _ =
@@ -40,7 +44,10 @@ main =
   simpleHTTP nullConf $
     msum
       [ mzero,
-        dir "body" $ ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate 4,
+        do {
+          g <- initStdGen
+          ; dir "body" $ ok $ toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ numbersTemplate $ generateDelay g -- mkStdGen 137
+        },
         nullDir >> ok (toResponseBS (C.pack "text/html;charset=utf-8") $ renderBS $ doc ()),
         seeOther ("/" :: String) $ toResponse ("Goto to root" :: String)
       ]
